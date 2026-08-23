@@ -34,6 +34,7 @@ export async function GET(req: NextRequest) {
   const { data, error: upsertError } = await supabase
     .from("users")
     .insert({
+      id: Date.now(),
       username: username || `user_${accountId}`,
       business_account_id: accountId,
       page_id: profileId,
