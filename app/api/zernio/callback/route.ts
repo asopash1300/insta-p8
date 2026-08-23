@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server"
 import { getSupabaseServerClient } from "@/lib/supabase-server"
 
 export async function GET(req: NextRequest) {
-
   const params = req.nextUrl.searchParams
 
   const connected = params.get("connected")
@@ -10,14 +9,12 @@ export async function GET(req: NextRequest) {
   const accountId = params.get("accountId")
   const username = params.get("username")
 
-
   console.log("ZERNIO CALLBACK", {
     connected,
     profileId,
     accountId,
     username
   })
-
 
   if (!profileId || !accountId) {
     return NextResponse.json(
@@ -27,36 +24,27 @@ export async function GET(req: NextRequest) {
         accountId
       },
       {
-        status:400
+        status: 400
       }
     )
   }
 
-
   const supabase = await getSupabaseServerClient()
-
 
   const { data, error: upsertError } = await supabase
     .from("users")
-    .upsert(
-      {
-        id: accountId,
-        username: username || `user_${accountId}`,
-        business_account_id: accountId,
-        page_id: profileId,
-        updated_at: new Date().toISOString(),
-      },
-      {
-        onConflict: "id",
-      }
-    )
-
+    .insert({
+      username: username || `user_${accountId}`,
+      business_account_id: accountId,
+      page_id: profileId,
+      updated_at: new Date().toISOString(),
+    })
+    .select()
 
   console.log("ZERNIO USER SAVE", {
     data,
     error: upsertError
   })
-
 
   if (upsertError) {
     console.error("ZERNIO SUPABASE ERROR", upsertError)
@@ -66,18 +54,16 @@ export async function GET(req: NextRequest) {
         error: upsertError.message
       },
       {
-        status:500
+        status: 500
       }
     )
   }
 
-
   const appUrl = process.env.NEXT_PUBLIC_APP_URL
 
-const response = NextResponse.redirect(
-  `${appUrl}/dashboard`
-)
-
+  const response = NextResponse.redirect(
+    `${appUrl}/dashboard`
+  )
 
   response.cookies.set(
     "zernio_session",
@@ -88,14 +74,13 @@ const response = NextResponse.redirect(
       platform: connected
     }),
     {
-      httpOnly:true,
-      secure:true,
-      sameSite:"lax",
-      path:"/",
-      maxAge:60*60*24*30
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30
     }
   )
-
 
   return response
 }
