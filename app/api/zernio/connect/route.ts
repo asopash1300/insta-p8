@@ -6,7 +6,7 @@ export async function GET() {
     const apiKey = process.env.ZERNIO_API_KEY
 
     const redirectUrl =
-      "https://insta-p8.up.railway.app/api/zernio/callback"
+  `${process.env.NEXT_PUBLIC_APP_URL}/api/zernio/callback`
 
     const url =
   `https://zernio.com/api/v1/connect/instagram` +
