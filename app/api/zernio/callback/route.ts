@@ -72,9 +72,11 @@ export async function GET(req: NextRequest) {
   }
 
 
-  const response = NextResponse.redirect(
-    "https://insta-p8.up.railway.app/dashboard"
-  )
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL
+
+const response = NextResponse.redirect(
+  `${appUrl}/dashboard`
+)
 
 
   response.cookies.set(
