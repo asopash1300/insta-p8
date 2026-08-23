@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getSupabaseServerClient } from "@/lib/supabase-server"
+
 export async function GET(req: NextRequest) {
 
   const params = req.nextUrl.searchParams
@@ -17,20 +18,7 @@ export async function GET(req: NextRequest) {
     username
   })
 
-const supabase = await getSupabaseServerClient()
 
-const { error } = await supabase
-  .from("users")
-  .upsert({
-    id: accountId,
-    username: username || "unknown",
-    business_account_id: accountId,
-    page_id: profileId,
-    updated_at: new Date().toISOString(),
-  })
-
-console.log("SUPABASE SAVE RESULT", error)
-  
   if (!profileId || !accountId) {
     return NextResponse.json(
       {
@@ -44,34 +32,51 @@ console.log("SUPABASE SAVE RESULT", error)
     )
   }
 
-const supabase = await getSupabaseServerClient()
 
-const { data, error } = await supabase
-  .from("users")
-  .upsert(
-    {
-      id: accountId,
-      username: username || `user_${accountId}`,
-      business_account_id: accountId,
-      page_id: profileId,
-      updated_at: new Date().toISOString(),
-    },
-    {
-      onConflict: "id",
-    }
+  const supabase = await getSupabaseServerClient()
+
+
+  const { data, error: upsertError } = await supabase
+    .from("users")
+    .upsert(
+      {
+        id: accountId,
+        username: username || `user_${accountId}`,
+        business_account_id: accountId,
+        page_id: profileId,
+        updated_at: new Date().toISOString(),
+      },
+      {
+        onConflict: "id",
+      }
+    )
+
+
+  console.log("ZERNIO USER SAVE", {
+    data,
+    error: upsertError
+  })
+
+
+  if (upsertError) {
+    console.error("ZERNIO SUPABASE ERROR", upsertError)
+
+    return NextResponse.json(
+      {
+        error: upsertError.message
+      },
+      {
+        status:500
+      }
+    )
+  }
+
+
+  const response = NextResponse.redirect(
+    "https://insta-p8.up.railway.app/dashboard"
   )
 
-console.log("ZERNIO USER SAVE", {
-  data,
-  error
-})
-  
-  const response = NextResponse.redirect(
-  "https://insta-p8.up.railway.app/dashboard"
-)
 
-
-  // ذخیره اتصال کاربر
   response.cookies.set(
     "zernio_session",
     JSON.stringify({
