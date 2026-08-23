@@ -69,6 +69,7 @@ export async function GET(request: NextRequest) {
       `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${clientSecret}&access_token=${shortToken}`
     )
 
+
     const longData = await longResponse.json()
 
     const accessToken =
@@ -81,42 +82,62 @@ export async function GET(request: NextRequest) {
       `https://graph.instagram.com/v24.0/me?fields=id,username&access_token=${accessToken}`
     )
 
+
     const profile = await profileResponse.json()
 
 
     const username =
       profile.username || `user_${instagramUserId}`
 
-console.log("CALLBACK REACHED BEFORE SUPABASE")
+
+    console.log("CALLBACK REACHED BEFORE SUPABASE")
+
+
     const supabase = await getSupabaseServerClient()
 
 
-    const { data, error } = await supabase
-  .from("users")
-  .upsert(
-    {
-      id: Number(instagramUserId),
-      username,
-      access_token: accessToken,
-      business_account_id: Number(instagramUserId),
-      page_id: instagramUserId,
-      token_expires_at:
-        new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-    {
-      onConflict: "id",
+    const { data, error: upsertError } = await supabase
+      .from("users")
+      .upsert(
+        {
+          id: Number(instagramUserId),
+          username,
+          access_token: accessToken,
+          business_account_id: Number(instagramUserId),
+          page_id: instagramUserId,
+          token_expires_at:
+            new Date(
+              Date.now() + 60 * 24 * 60 * 60 * 1000
+            ).toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: "id",
+        }
+      )
+
+
+    console.log(
+      "USER SAVE:",
+      data,
+      upsertError
+    )
+
+
+    if (upsertError) {
+      console.error(
+        "USER UPSERT ERROR:",
+        upsertError
+      )
+
+      throw upsertError
     }
-  )
 
-console.log("USER SAVE:", data, error)    
 
-if (error) {
-  console.error("USER UPSERT ERROR:", error)
-  throw error
-}
-
-console.log("USER SAVED:", data)
+    console.log(
+      "USER SAVED:",
+      data
+    )
 
 
     const response = NextResponse.redirect(
@@ -142,16 +163,16 @@ console.log("USER SAVED:", data)
     return response
 
 
-  } catch (error:any) {
+  } catch (err:any) {
 
     console.error(
       "INSTAGRAM CALLBACK ERROR",
-      error
+      err
     )
 
     return NextResponse.json(
       {
-        error:error.message
+        error: err.message
       },
       {
         status:500
